@@ -1,42 +1,60 @@
 module.exports = function(app) {
+    let produtosModel = app.db.mongoose.model("Produtos")
+
     return {
         listarProdutos: function(req, res) {
-            res.json(app.db.produtosDB)
+            let search = req.body.search
+            produtosModel.find({
+                nome: new RegExp(search)
+            })
+            .then((produtos) => {
+                res.json(produtos)
+            })
+            .catch((err) => res.status(500).send(err))
         },
         adicionar: (req, res) => {
-            try {            
-                let produto = {}
-
-                produto.id = req.body.id
-                produto.nome = req.body.nome
-                produto.preco = req.body.preco
-
-                app.db.produtosDB.push(produto)
-
-                res.send(`Produto adicionado com sucesso - Id: ${produto.id}`);
+            try {
+                let produto = new produtosModel(req.body)
+                produto.save((err) => {
+                    if(err)
+                        res.status(500).send(`Erro ao inserir: ${err}`)
+                    else
+                        res.send(`Produto adicionado com sucesso - Id: ${produto.id}`);
+                });
             } catch (error) {
                 res.send("Eror ao adicionar produto: " + error);
             }
         },
-        consultarPorId: (req, res) => {
-            let id = req.params.id
-            let produto = app.db.produtosDB.find((item) => id == item.id);
-            if(produto)
-                res.json(produto);
-            else
-                res.status(404).end()
+        consultarPorId: async (req, res) => {
+            try {
+                let id = req.params.id
+                let produto = await produtosModel.findById(id)
+                if(produto)
+                    res.json(produto)
+                else
+                    res.status(404).end();
+            } catch (error) {
+                res.status(404).send();
+            }
         },
         atualizar: (req, res) => {
             let id = req.params.id
             let produto = req.body
-            let index = app.db.produtosDB.findIndex((item) => id == item.id);
-            app.db.produtosDB[index] = produto
-            res.send("Produto atualizado com sucesso!");
+            produtosModel.findByIdAndUpdate(id, { $set: produto } , (err) => {
+                if(err)
+                    res.status(500).send(`Erro ao atualizar produto: ${err}`)
+                else
+                    res.send("Produto atualizado com sucesso")
+            })
         },
         excluir: (req, res) => {
             let id = req.params.id
-            app.db.produtosDB = app.db.produtosDB.filter((item) => item.id != id)
-            res.send("Produto excluído com sucesso!");
+            produtosModel.findByIdAndRemove(id, (err) => {
+                if(err)
+                    res.status(500).send(`Erro ao excluir produto: ${err}`)
+                else
+                    res.send("Produto excluído com sucesso")
+            })
         }
     }
 }
