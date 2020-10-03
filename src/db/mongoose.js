@@ -1,7 +1,7 @@
 const mongoose = require('mongoose')
 
 module.exports = app => {
-    mongoose.connect("mongodb://localhost:27017/nodefatec", {
+    mongoose.connect(`mongodb://${process.env.MONGODB_URL}/${process.env.MONGODB_DATABASE}`, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
         useFindAndModify: false

@@ -1,3 +1,5 @@
+const fs = require('fs')
+
 module.exports = function(app) {
     let produtosModel = app.db.mongoose.model("Produtos")
 
@@ -15,6 +17,7 @@ module.exports = function(app) {
         adicionar: (req, res) => {
             try {
                 let produto = new produtosModel(req.body)
+                produto.imagem = req.file.filename // req.file.path  = uploads/asodnaisdisadsa
                 produto.save((err) => {
                     if(err)
                         res.status(500).send(`Erro ao inserir: ${err}`)
@@ -37,9 +40,19 @@ module.exports = function(app) {
                 res.status(404).send();
             }
         },
-        atualizar: (req, res) => {
+        atualizar: async (req, res) => {
             let id = req.params.id
             let produto = req.body
+
+            if(req.file){
+                let produtoDB = await produtosModel.findById(id)
+                if(produtoDB.imagem) {
+                    // Apagar a imagem original
+                    fs.unlinkSync("uploads/" + produtoDB.imagem)
+                }
+                produto.imagem = req.file.filename
+            }
+
             produtosModel.findByIdAndUpdate(id, { $set: produto } , (err) => {
                 if(err)
                     res.status(500).send(`Erro ao atualizar produto: ${err}`)
